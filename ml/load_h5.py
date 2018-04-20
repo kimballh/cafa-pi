@@ -64,7 +64,7 @@ def store_sequence_embeddings(sequences: dict, h5_path: str, max_len: int=None):
     print(f"\nFinished. Stored {n_seqs} sequences in {time()-start_time} seconds.")
     f.close()
 
-def store_binary_labels(csv_path: str, h5_path: str, ids_of_interest: set, sequences: dict=None, dataset_name=""):
+def store_binary_labels(csv_path: str, h5_path: str, ids_of_interest: set, sequences: dict=None, dataset_name:str=""):
     dataset_name = "/".join(["labels/binary", dataset_name])
     if sequences == None:
         sequences = unique_index_dict(csv_path, "Sequence")
@@ -123,10 +123,21 @@ def store_multi_hot_labels(csv_path: str, h5_path: str):
 
 
 if __name__ == "__main__":
-    csv_path = "./data_acquisition/all_training_data_final.csv"
+    csv_path = "./data/parsed/training.csv"
     h5_path = "./data/parsed/all_train.h5"
+    csv_target_path_pseudo = "./data/parsed/target.237561.csv"
+    csv_target_path_candida = "./data/parsed/target.208963.csv"
+    h5_path_pseudo = "./data/parsed/target.237561.h5"
+    h5_path_candida = "./data/parsed/target.208963.h5"
+    biofilm = "GO:0042710"
+    motility = "GO:0001539"
+    majority = "GO:0005634"
     seq_ixs = unique_index_dict(csv_path, "Sequence")
-    max_len = max_seq_length(csv_path)
-    store_sequence_embeddings(seq_ixs, h5_path)
-    store_binary_labels(csv_path, h5_path, {"0005634"})
+    seq_ixs_p = unique_index_dict(csv_target_path_pseudo, "Sequence")
+    seq_ixs_c = unique_index_dict(csv_target_path_candida, "Sequence")
+    store_sequence_embeddings(seq_ixs_p, h5_path_pseudo, max_len=2500)
+    store_sequence_embeddings(seq_ixs_c, h5_path_candida, max_len=2500)
+    store_sequence_embeddings(seq_ixs, h5_path, max_len=2500)
+    store_binary_labels(csv_path, h5_path, {biofilm}, dataset_name="biofilm")
+    store_binary_labels(csv_path, h5_path, {motility}, dataset_name="motility")
     store_multi_hot_labels(csv_path, h5_path)

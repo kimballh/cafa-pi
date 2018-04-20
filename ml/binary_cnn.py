@@ -1,12 +1,12 @@
 import tensorflow as tf
 import numpy as np
-from .embeddings import load_data_padded, get_batch, shuffle_unison, H5pyDao
+from .embeddings import load_data_padded, get_batch, shuffle_unison, H5pyDao, seq_from_matrix
 import random
-from .dao import HDF5Dao
+from .dao import HDF5Dao, HDF5TargetDao
 
 tf.logging.set_verbosity(tf.logging.WARN)
 
-SEQ_LEN = 2499
+SEQ_LEN = 2500
 NUM_CHARS = 20
 NUM_TARGETS = 2
 
@@ -38,7 +38,12 @@ if __name__ == "__main__":
     flattened = tf.contrib.layers.flatten(conv10)
     fc1 = tf.contrib.layers.fully_connected(flattened, 128)
     outputs = tf.contrib.layers.fully_connected(fc1, NUM_TARGETS, activation_fn=tf.nn.sigmoid)
-    loss = tf.losses.softmax_cross_entropy(targets, outputs)
+    vars_ = tf.trainable_variables()
+    l2 = tf.add_n([
+        tf.nn.l2_loss(v) for v in vars_
+            if 'bias' not in v.name
+    ]) * 0.001
+    loss = tf.losses.softmax_cross_entropy(targets, outputs) + l2
     tf.summary.scalar("mse", loss)
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
@@ -47,20 +52,41 @@ if __name__ == "__main__":
         train_writer = tf.summary.FileWriter("log/binary/residual/train", sess.graph)
         test_writer = tf.summary.FileWriter("log/binary/residual/test", sess.graph)
         tf.global_variables_initializer().run()
-        dao = HDF5Dao("./data/parsed/cafa3/train.h5", label_type="binary")
-        
-        for i in range(1001):
-            batch_inputs, batch_targets = dao.get_batch_train()
+        #dao = HDF5Dao("./data/parsed/all_train.h5", label_type="binary/biofilm")
+        dao = HDF5Dao("./data/parsed/all_train.h5", label_type="binary/motility")
+        target_dao = HDF5TargetDao("./data/parsed/target.208963.h5")
+        batch_size = 25
+
+        i = 0
+        num_epochs = 10.0
+        while dao.epochs < num_epochs:
+            batch_inputs, batch_targets = dao.get_batch_train(size=batch_size)
             summary, train_loss, _ = sess.run([merged, loss, optimizer], feed_dict={
                 inputs: batch_inputs,
                 targets: batch_targets,
             })
             train_writer.add_summary(summary, i)
             if i % 25 == 0:
-                batch_inputs, batch_targets = dao.get_batch_test()
+                batch_inputs, batch_targets = dao.get_batch_test(batch_size)
                 summary, test_loss, = sess.run([merged, loss], feed_dict={
                     inputs: batch_inputs,
                     targets: batch_targets
                 })
                 test_writer.add_summary(summary, i)
                 print("Iteration {i}, test loss {mse}, epoch {epoch}".format(i=i, mse=test_loss, epoch=dao.epochs))
+            if i % 500 == 0 or dao.epochs >= num_epochs:
+                # Make predictions on target data, store in a dictionary, and save to csv
+                print("Making predictions on target data.")
+                predictions = {}
+                for chunk in target_dao.get_data_chunked(size=batch_size):
+                    outputs_ = sess.run(outputs, feed_dict={
+                        inputs: chunk,
+                    })
+                    for mtx, output in zip(chunk, outputs_):
+                        seq = seq_from_matrix(mtx)
+                        predictions[seq] = output
+                out_path = "./data/predictions/binary_motility_208963.csv"
+                print(f"Saving predictions in {out_path}")
+                with open(out_path, "w") as outfile:
+                    for seq, preds in predictions.items():
+                        outfile.write(seq + "," + ",".join([str(x) for x in preds]) + "\n")
