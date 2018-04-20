@@ -50,7 +50,7 @@ class HDF5Dao(object):
 
     @property
     def epochs(self):
-        return self.__n_train_retrieved / self.n
+        return self.__n_train_retrieved / float(self.n)
 
 if __name__ == "__main__":
     h5_path = "./data/parsed/cafa3/train.h5"

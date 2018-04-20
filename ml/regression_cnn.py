@@ -11,7 +11,7 @@ tf.logging.set_verbosity(tf.logging.WARN)
 
 SEQ_LEN = 2500
 NUM_CHARS = 20
-NUM_TARGETS = 7265
+NUM_TARGETS = 50
 
 if __name__ == "__main__":
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         tf.nn.l2_loss(v) for v in vars_
             if 'bias' not in v.name
     ]) * 0.001
-    loss = tf.losses.sigmoid_cross_entropy(targets, outputs) + l2
+    loss = tf.losses.mean_squared_error(targets, outputs) + l2
     tf.summary.scalar("mse", loss)
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         train_writer = tf.summary.FileWriter("log/binary/residual/train", sess.graph)
         test_writer = tf.summary.FileWriter("log/binary/residual/test", sess.graph)
         tf.global_variables_initializer().run()
-        dao = HDF5Dao("./data/parsed/all_train.h5", label_type="multi_hot")
+        dao = HDF5Dao("./data/parsed/all_train.h5", label_type="seq_vectors")
         target_dao_p = HDF5TargetDao("./data/parsed/target.208963.h5")
         target_dao_c = HDF5TargetDao("./data/parsed/target.237561.h5")
         batch_size = 25
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         for mtx, output in zip(chunk, outputs_):
                             seq = seq_from_matrix(mtx)
                             predictions[seq] = output
-                    out_path = "./data/predictions/multiclass_{}.csv".format(taxon_id)
+                    out_path = "./data/predictions/seq_vectors_{}.csv".format(taxon_id)
                     print("Saving predictions in {out_path}".format(out_path=out_path))
                     with open(out_path, "w") as outfile:
                         for seq, preds in predictions.items():

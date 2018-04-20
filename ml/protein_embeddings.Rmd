@@ -95,5 +95,39 @@ go_vecs <- token_vecs %>%
 It would be really cool to plot these vectors and see whether the closely related ones group together.  But for now, we'll just save them and call it good!
 
 ```{r}
-go_vecs %>% write_csv("../data/parsed/go_embeddings.csv")
+#go_vecs %>% write_csv("../data/parsed/go_embeddings.csv")
+```
+
+Hold up.  Let's actually get protein-specific vectors by getting the function vectors for each function that each protein has, and then averaging those vectors
+
+Load the data..
+
+```{r}
+proteins <- read_csv("../data/parsed/training.csv") %>% select(Sequence, GO_ID)
+```
+
+Do we have vectors for all the proteins?
+
+```{r}
+proteins %>% distinct(Sequence) %>% nrow()
+proteins %>% inner_join(go_vecs) %>% distinct(Sequence) %>% nrow()
+```
+
+Nope.  Yikes.  Since our HDF5 file already has ALL of the protein sequences in it, our order would be totally messed up if we were to drop those ones now.  So... how about we just set all those vectors to 0?  Or some tiny random non-zero values?
+
+```{r}
+set.seed(0)
+seq_embeddings <- proteins %>% 
+  left_join(go_vecs) %>% 
+  select(-GO_ID) %>% 
+  group_by(Sequence) %>% 
+  summarize_all(mean, na.rm = TRUE) %>% 
+  mutate_all(funs(replace(., is.na(.), rnorm(1, 0, 0.01))))
+head(seq_embeddings)
+```
+
+Terrific.  We now have a vector for each sequence!  Let's save it.
+
+```{r}
+seq_embeddings %>% write_csv("../data/parsed/seq_embeddings.csv")
 ```

@@ -121,10 +121,35 @@ def store_multi_hot_labels(csv_path: str, h5_path: str):
     print(f"\nFinished. Stored {i} labels in {time()-start_time} seconds.")
     f.close()
 
+def store_sequence_vectors(csv_path: str, h5_path: str, sequences: dict):
+    print(f"Storing sequence vectors in {h5_path}")
+    start_time = time()
+    # Make the HDF5 Dataset
+    f = h5py.File(h5_path, "a")
+    try:
+        del f['labels/seq_vectors']
+    except KeyError:
+        pass
+    seq_vectors = f.require_dataset("labels/seq_vectors", (len(sequences), 50), "f")
+    # Load the vectors from the file
+    with open(csv_path, "r") as infile:
+        # toss the header
+        infile.readline()
+        for i, line in enumerate(infile):
+            items = list_from_line(line)
+            seq_ix = sequences[items[0]]
+            vector = np.array([float(x) for x in items[1:]])
+            # Load the vectors into their respective locations
+            seq_vectors[seq_ix] = vector
+            if i % 100 == 0:
+                print(f"Stored {i+1}/{len(sequences)} vectors", end="\r")
+    print(f"\nFinished. Stored {i} vectors in {time()-start_time} seconds.")
+    f.close()
 
 if __name__ == "__main__":
     csv_path = "./data/parsed/training.csv"
     h5_path = "./data/parsed/all_train.h5"
+    seq_vectors_path = "./data/parsed/seq_embeddings.csv"
     csv_target_path_pseudo = "./data/parsed/target.237561.csv"
     csv_target_path_candida = "./data/parsed/target.208963.csv"
     h5_path_pseudo = "./data/parsed/target.237561.h5"
@@ -133,11 +158,12 @@ if __name__ == "__main__":
     motility = "GO:0001539"
     majority = "GO:0005634"
     seq_ixs = unique_index_dict(csv_path, "Sequence")
-    seq_ixs_p = unique_index_dict(csv_target_path_pseudo, "Sequence")
-    seq_ixs_c = unique_index_dict(csv_target_path_candida, "Sequence")
-    store_sequence_embeddings(seq_ixs_p, h5_path_pseudo, max_len=2500)
-    store_sequence_embeddings(seq_ixs_c, h5_path_candida, max_len=2500)
-    store_sequence_embeddings(seq_ixs, h5_path, max_len=2500)
-    store_binary_labels(csv_path, h5_path, {biofilm}, dataset_name="biofilm")
-    store_binary_labels(csv_path, h5_path, {motility}, dataset_name="motility")
+    store_sequence_vectors(seq_vectors_path, h5_path, seq_ixs)
+    # seq_ixs_p = unique_index_dict(csv_target_path_pseudo, "Sequence")
+    # seq_ixs_c = unique_index_dict(csv_target_path_candida, "Sequence")
+    # store_sequence_embeddings(seq_ixs_p, h5_path_pseudo, max_len=2500)
+    # store_sequence_embeddings(seq_ixs_c, h5_path_candida, max_len=2500)
+    # store_sequence_embeddings(seq_ixs, h5_path, max_len=2500)
+    # store_binary_labels(csv_path, h5_path, {biofilm}, dataset_name="biofilm")
+    # store_binary_labels(csv_path, h5_path, {motility}, dataset_name="motility")
     store_multi_hot_labels(csv_path, h5_path)
