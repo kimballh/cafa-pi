@@ -166,4 +166,4 @@ if __name__ == "__main__":
     # store_sequence_embeddings(seq_ixs, h5_path, max_len=2500)
     # store_binary_labels(csv_path, h5_path, {biofilm}, dataset_name="biofilm")
     # store_binary_labels(csv_path, h5_path, {motility}, dataset_name="motility")
-    store_multi_hot_labels(csv_path, h5_path)
+    # store_multi_hot_labels(csv_path, h5_path)
