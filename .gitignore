@@ -12,3 +12,4 @@ target.*.csv
 data/parsed/cafa3
 *.h5
 *.csv
+slurm*.out
