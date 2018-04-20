@@ -68,7 +68,7 @@ if __name__ == "__main__":
         #dao = HDF5Dao("./data/parsed/all_train.h5", label_type="binary/biofilm")
         dao = HDF5Dao(train_path, label_type="binary/{}".format(function))
         target_dao = HDF5TargetDao("./data/parsed/target.{}.h5".format(taxon_id))
-        batch_size = 25
+        batch_size = 100
 
         i = 0
         num_epochs = 10.0
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 targets: batch_targets,
             })
             train_writer.add_summary(summary, i)
-            if i % 25 == 0:
+            if i % 100 == 0:
                 batch_inputs, batch_targets = dao.get_batch_test(batch_size)
                 summary, test_loss, = sess.run([merged, loss], feed_dict={
                     inputs: batch_inputs,

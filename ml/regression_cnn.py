@@ -59,7 +59,7 @@ if __name__ == "__main__":
         dao = HDF5Dao("./data/parsed/all_train.h5", label_type="seq_vectors")
         target_dao_p = HDF5TargetDao("./data/parsed/target.208963.h5")
         target_dao_c = HDF5TargetDao("./data/parsed/target.237561.h5")
-        batch_size = 25
+        batch_size = 100
 
         i = 0
         num_epochs = 10.0
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                 targets: batch_targets,
             })
             train_writer.add_summary(summary, i)
-            if i % 25 == 0:
+            if i % 100 == 0:
                 batch_inputs, batch_targets = dao.get_batch_test(batch_size)
                 summary, test_loss, = sess.run([merged, loss], feed_dict={
                     inputs: batch_inputs,
