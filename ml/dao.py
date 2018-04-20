@@ -3,12 +3,12 @@ import numpy as np
 from .embeddings import seq_from_matrix
 
 class HDF5TargetDao(object):
-    def __init__(self, h5_path:str):
+    def __init__(self, h5_path):
         f = h5py.File(h5_path, "r")
         self.data = f['embeddings/sequence']
         self.n = self.data.shape[0]
 
-    def get_data_chunked(self, size:int=25):
+    def get_data_chunked(self, size=25):
         for i in range(0, self.n, size):
             # If we're going to overflow, then take a few steps back.
             # Maybe necessary because tf takes in fixed batch sizes.
@@ -17,11 +17,11 @@ class HDF5TargetDao(object):
             yield self.data[i:i+size, :, :]
 
 class HDF5Dao(object):
-    def __init__(self, h5_path: str, label_type: str="binary/motility", pct_test: float=0.1):
+    def __init__(self, h5_path, label_type="binary/motility", pct_test=0.1):
         f = h5py.File(h5_path, "r")
         self.data = f['embeddings/sequence']
         self.n = self.data.shape[0]
-        self.labels = f[f'labels/{label_type}']
+        self.labels = f['labels/{}'.format(label_type)]
         self.train_test_split(pct_test)
         self.__n_train_retrieved = 0
 
@@ -32,7 +32,7 @@ class HDF5Dao(object):
         self.test_indices = indices[:n_test]
         self.train_indices = indices[n_test:]
 
-    def __batch(self, n:int, test_or_train:str):
+    def __batch(self, n, test_or_train):
         if test_or_train == "test":
             ixs = self.test_indices
         else:
@@ -60,7 +60,9 @@ if __name__ == "__main__":
     chunk_size = 17
     for chunk in target_dao.get_data_chunked(size=chunk_size):
         assert (len(chunk) == chunk_size,
-            f"Chunks are the wrong size: {len(chunk)} != {chunk_size}")
+            "Chunks are the wrong size: {} != {}".format(
+                len(chunk), chunk_size
+            ))
     print(seq_from_matrix(chunk[-1]))
         # for mtx in chunk:
         #     print(seq_from_matrix(mtx))
