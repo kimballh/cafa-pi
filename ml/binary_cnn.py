@@ -1,8 +1,12 @@
+# pylint: disable=E0632
+
 import tensorflow as tf
 import numpy as np
 from .embeddings import seq_from_matrix
 import random
 from .dao import HDF5Dao, HDF5TargetDao
+from sys import argv, exit
+
 
 tf.logging.set_verbosity(tf.logging.WARN)
 
@@ -11,6 +15,15 @@ NUM_CHARS = 20
 NUM_TARGETS = 2
 
 if __name__ == "__main__":
+    try:
+        train_path, function, taxon_id = argv[1:]
+        assert function in {"motility", "biofilm"}
+        assert taxon_id in {"208963", "237561"}
+    except (ValueError, AssertionError):
+        print("Usage: python -m ml.binary_cnn "
+            "path/to/train/data.h5 [motility|biofilm] [208963|237561]")
+        exit()
+
     random.seed(0)
     inputs = tf.placeholder(tf.float32, [None, SEQ_LEN, NUM_CHARS], "sequence")
     targets = tf.placeholder(tf.float32, [None, NUM_TARGETS])
@@ -53,8 +66,8 @@ if __name__ == "__main__":
         test_writer = tf.summary.FileWriter("log/binary/residual/test", sess.graph)
         tf.global_variables_initializer().run()
         #dao = HDF5Dao("./data/parsed/all_train.h5", label_type="binary/biofilm")
-        dao = HDF5Dao("./data/parsed/all_train.h5", label_type="binary/motility")
-        target_dao = HDF5TargetDao("./data/parsed/target.208963.h5")
+        dao = HDF5Dao(train_path, label_type="binary/{}".format(function))
+        target_dao = HDF5TargetDao("./data/parsed/target.{}.h5".format(taxon_id))
         batch_size = 25
 
         i = 0
@@ -85,8 +98,9 @@ if __name__ == "__main__":
                     for mtx, output in zip(chunk, outputs_):
                         seq = seq_from_matrix(mtx)
                         predictions[seq] = output
-                out_path = "./data/predictions/binary_motility_208963.csv"
+                out_path = "./data/predictions/binary_{}_{}.csv".format(function, taxon_id)
                 print("Saving predictions in {out_path}".format(out_path=out_path))
                 with open(out_path, "w") as outfile:
                     for seq, preds in predictions.items():
                         outfile.write(seq + "," + ",".join([str(x) for x in preds]) + "\n")
+            i += 1
