@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+from .embeddings import seq_from_matrix
 
 class HDF5TargetDao(object):
     def __init__(self, h5_path:str):
@@ -7,8 +8,16 @@ class HDF5TargetDao(object):
         self.data = f['embeddings/sequence']
         self.n = self.data.shape[0]
 
+    def get_data_chunked(self, size:int=25):
+        for i in range(0, self.n, size):
+            # If we're going to overflow, then take a few steps back.
+            # Maybe necessary because tf takes in fixed batch sizes.
+            if i + size > self.n:
+                i = self.n - size
+            yield self.data[i:i+size, :, :]
+
 class HDF5Dao(object):
-    def __init__(self, h5_path: str, label_type: str="binary", pct_test: float=0.1):
+    def __init__(self, h5_path: str, label_type: str="binary/motility", pct_test: float=0.1):
         f = h5py.File(h5_path, "r")
         self.data = f['embeddings/sequence']
         self.n = self.data.shape[0]
@@ -44,8 +53,18 @@ class HDF5Dao(object):
         return self.__n_train_retrieved / self.n
 
 if __name__ == "__main__":
-    h5_path = "./data/parsed/cafa3/test.h5"
-    dao = HDF5Dao(h5_path, label_type="multi_hot")
-    for _ in range(100):
-        x, y = dao.get_batch_train(100)
-    print(dao.epochs)
+    h5_path = "./data/parsed/cafa3/train.h5"
+    target_dao = HDF5TargetDao(h5_path)
+    # Prime chunk size 17 because maybe it'll help test the whole
+    # overflow avoidance thing.
+    chunk_size = 17
+    for chunk in target_dao.get_data_chunked(size=chunk_size):
+        assert (len(chunk) == chunk_size,
+            f"Chunks are the wrong size: {len(chunk)} != {chunk_size}")
+    print(seq_from_matrix(chunk[-1]))
+        # for mtx in chunk:
+        #     print(seq_from_matrix(mtx))
+    # dao = HDF5Dao(h5_path, label_type="multi_hot")
+    # for _ in range(100):
+    #     x, y = dao.get_batch_train(100)
+    # print(dao.epochs)

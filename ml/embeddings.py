@@ -23,6 +23,17 @@ def one_hot_seq(seq, max_size=0):
             temp.append([0.0] * len(AMINOS))
     return np.array(temp)
 
+def seq_from_matrix(mtx):
+    """
+    The inverse of one_hot_seq()
+    """
+    seq = ""
+    for row in mtx:
+        if sum(row) == 0:
+            break
+        seq += AMINOS[np.argmax(row)]
+    return seq
+
 def load_data_padded(path):
     """
     Load data and encode the sequences and targets as arrays of 1.0s and 0.0s.
@@ -186,8 +197,7 @@ class H5pyDao:
 
 
 if __name__ == "__main__":
-    df = pd.DataFrame({
-        "id": [1, 1, 2, 2, 2, 3, 4, 5, 5], 
-        "go_id": ["a", "b", "c", "d", "a", "d", "e", "a", "e"]
-    })
-    print(encode_functions(df))
+    mtx = one_hot_seq(AMINOS, max_size=22)
+    seq = seq_from_matrix(mtx)
+    print(seq)
+    print(AMINOS)
