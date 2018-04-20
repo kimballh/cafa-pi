@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import h5py
+import os
 
 AMINOS = 'ACDEFGHIKLMNPQRSTVWY'
 
@@ -21,6 +22,17 @@ def one_hot_seq(seq, max_size=0):
         else:
             temp.append([0.0] * len(AMINOS))
     return np.array(temp)
+
+def seq_from_matrix(mtx):
+    """
+    The inverse of one_hot_seq()
+    """
+    seq = ""
+    for row in mtx:
+        if sum(row) == 0:
+            break
+        seq += AMINOS[np.argmax(row)]
+    return seq
 
 def load_data_padded(path):
     """
@@ -108,39 +120,84 @@ def get_batch(data, labels, batch_size=25, shuffle=True):
     #     data, labels = shuffle_unison(data, labels)
     # return data[:batch_size], labels[:batch_size]
 
-def get_batch_hdf5(file, group, batch_size=25):
-    """
-    gets batch of data out of hdf5 file
-    :param file: path to hd5 file
-    :param group: 'train' or 'test'
-    :param batch_size:
-    :return:
-    """
-    with h5py.File(file, 'r') as f:
-        indices = np.random.choice(len(f[group]['attributes']), batch_size, replace=False)
-        return np.array(f[group]['attributes'])[indices], np.array(f[group]['labels'])[indices]
+class H5pyDao:
+    def __init__(self, hdf5_path, percent_test=10, csv_path=None, chunk_size=1000):
+        self.__path = hdf5_path
+        self.__percent_test = percent_test
+        self.__chunk_size = chunk_size
 
-def load_into_hdf5(in_file, out_file):
-    data, labels = load_data_padded(in_file)
-    data, labels = shuffle_unison(data, labels)
-    split_point = int(0.9 * len(data))
-    data_train = data[:split_point]
-    labels_train = labels[:split_point]
-    data_test = data[split_point:]
-    labels_test = labels[split_point:]
+        if csv_path:
+            self.load_data(csv_path, hdf5_path)
+        assert os.path.isfile(hdf5_path), "{}: File does not exist.".format(hdf5_path)
 
-    with h5py.File(out_file, "w") as f:
-        train = f.create_group('train')
-        test = f.create_group('test')
-        train.create_dataset('attributes', data=data_train)
-        train.create_dataset('labels', data=labels_train)
-        test.create_dataset('attributes', data=data_test)
-        test.create_dataset('labels', data=labels_test)
+        with h5py.File(hdf5_path) as f:
+            num_attributes = f["attributes"].shape[0]
+            num_labels = f["labels"].shape[0]
+            assert num_attributes == num_labels, "Data and Labels different sizes.  {} != {}".format(num_attributes, num_labels)
+            self.num_samples = num_attributes
+            self.num_test = int(num_attributes * (percent_test/100))
+            self.num_train = self.num_samples - self.num_test
+            self.test_indices = np.random.choice(self.num_samples, self.num_test, replace=False)
+
+    def cleanup(self):
+        os.remove(self.__path)
+
+    def get_batch_train(self, batch_size=25):
+        repeat = True
+        indices = np.random.choice(self.num_samples, batch_size, replace=False)
+        while repeat:
+            repeat = False
+            for i in range(len(indices)):
+                if indices[i] in self.test_indices:
+                    repeat = True
+                    indices[i] = np.random.random_integers(self.num_samples)
+
+        with h5py.File(self.__path) as f:
+            return f["attributes"][()][indices], f["labels"][()][indices]
+
+    def get_batch_test(self, batch_size=25):
+        indices = np.random.permutation(self.test_indices)[0:25]
+        with h5py.File(self.__path) as f:
+            return f["attributes"][()][indices], f["labels"][()][indices]
+
+    def load_data(self, in_file, out_file):
+        seen = set()
+        seqs = []
+        count = 0
+        for chunk in pd.read_csv(in_file, chunksize=self.__chunk_size):
+            count += 1
+            print("Looking at chunk {count}".format(count=count))
+            for _, row in chunk.iterrows():
+                seq = row['Sequence']
+                if seq not in seen:
+                    seen.add(seq)
+                    seqs.append(seq)
+        print("done with the chunks.")
+        max_len = max([len(seq) for seq in seqs])
+        print("max_len: {max_len}".format(max_len=max_len))
+        targets = np.array(get_labels(in_file)) # TODO: we run out of memory here.
+        print("got targets.")
+        with h5py.File(out_file, "w") as f:
+            f.create_dataset('attributes', shape=(0, max_len, 20), maxshape=(None, None, None))
+            f.create_dataset('labels', data=targets)
+        print("created datasets")
+        i = 0
+        while i < len(seqs):
+            if i + self.__chunk_size < len(seqs):
+                print("gonna grab a chunk")
+                data_encodings = np.array([one_hot_seq(seq, max_len) for seq in seqs[i:i + self.__chunk_size]])
+                print("got one")
+            else:
+                data_encodings = np.array([one_hot_seq(seq, max_len) for seq in seqs[i:]])
+            with h5py.File(out_file, "a") as f:
+                f["attributes"].resize((f["attributes"].shape[0] + data_encodings.shape[0]), axis=0)
+                f["attributes"][-data_encodings.shape[0]:] = data_encodings
+            i += self.__chunk_size
+            print("loaded {i} so far...".format(i=i))
 
 
 if __name__ == "__main__":
-    df = pd.DataFrame({
-        "id": [1, 1, 2, 2, 2, 3, 4, 5, 5], 
-        "go_id": ["a", "b", "c", "d", "a", "d", "e", "a", "e"]
-    })
-    print(encode_functions(df))
+    mtx = one_hot_seq(AMINOS, max_size=22)
+    seq = seq_from_matrix(mtx)
+    print(seq)
+    print(AMINOS)
