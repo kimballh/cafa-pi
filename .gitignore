@@ -11,3 +11,4 @@ target.*.csv
 *.html
 data/parsed/cafa3
 *.h5
+*.csv
