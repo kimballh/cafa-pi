@@ -22,4 +22,4 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
 module load python/3/6
 cd ../
-python -m ml.load_h5
+python3 -m ml.load_h5
