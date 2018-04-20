@@ -59,10 +59,9 @@ if __name__ == "__main__":
     # overflow avoidance thing.
     chunk_size = 17
     for chunk in target_dao.get_data_chunked(size=chunk_size):
-        assert (len(chunk) == chunk_size,
+        assert len(chunk) == chunk_size, \
             "Chunks are the wrong size: {} != {}".format(
-                len(chunk), chunk_size
-            ))
+                len(chunk), chunk_size)
     print(seq_from_matrix(chunk[-1]))
         # for mtx in chunk:
         #     print(seq_from_matrix(mtx))
