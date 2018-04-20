@@ -41,7 +41,7 @@ if __name__ == "__main__":
     conv10 = tf.add(conv8, conv10)
     flattened = tf.contrib.layers.flatten(conv10)
     fc1 = tf.contrib.layers.fully_connected(flattened, 128)
-    outputs = tf.contrib.layers.fully_connected(fc1, NUM_TARGETS, activation_fn=tf.nn.sigmoid)
+    outputs = tf.contrib.layers.fully_connected(fc1, NUM_TARGETS, activation_fn=None)
     vars_ = tf.trainable_variables()
     l2 = tf.add_n([
         tf.nn.l2_loss(v) for v in vars_
