@@ -121,7 +121,7 @@ def get_batch(data, labels, batch_size=25, shuffle=True):
     # return data[:batch_size], labels[:batch_size]
 
 class H5pyDao:
-    def __init__(self, hdf5_path: str, percent_test: int=10, csv_path: str=None, chunk_size: int=1000):
+    def __init__(self, hdf5_path, percent_test=10, csv_path=None, chunk_size=1000):
         self.__path = hdf5_path
         self.__percent_test = percent_test
         self.__chunk_size = chunk_size
@@ -142,7 +142,7 @@ class H5pyDao:
     def cleanup(self):
         os.remove(self.__path)
 
-    def get_batch_train(self, batch_size: int=25):
+    def get_batch_train(self, batch_size=25):
         repeat = True
         indices = np.random.choice(self.num_samples, batch_size, replace=False)
         while repeat:
@@ -155,7 +155,7 @@ class H5pyDao:
         with h5py.File(self.__path) as f:
             return f["attributes"][()][indices], f["labels"][()][indices]
 
-    def get_batch_test(self, batch_size: int=25):
+    def get_batch_test(self, batch_size=25):
         indices = np.random.permutation(self.test_indices)[0:25]
         with h5py.File(self.__path) as f:
             return f["attributes"][()][indices], f["labels"][()][indices]
@@ -166,7 +166,7 @@ class H5pyDao:
         count = 0
         for chunk in pd.read_csv(in_file, chunksize=self.__chunk_size):
             count += 1
-            print(f"Looking at chunk {count}")
+            print("Looking at chunk {count}".format(count=count))
             for _, row in chunk.iterrows():
                 seq = row['Sequence']
                 if seq not in seen:
@@ -174,7 +174,7 @@ class H5pyDao:
                     seqs.append(seq)
         print("done with the chunks.")
         max_len = max([len(seq) for seq in seqs])
-        print(f"max_len: {max_len}")
+        print("max_len: {max_len}".format(max_len=max_len))
         targets = np.array(get_labels(in_file)) # TODO: we run out of memory here.
         print("got targets.")
         with h5py.File(out_file, "w") as f:
@@ -193,7 +193,7 @@ class H5pyDao:
                 f["attributes"].resize((f["attributes"].shape[0] + data_encodings.shape[0]), axis=0)
                 f["attributes"][-data_encodings.shape[0]:] = data_encodings
             i += self.__chunk_size
-            print(f"loaded {i} so far...")
+            print("loaded {i} so far...".format(i=i))
 
 
 if __name__ == "__main__":
