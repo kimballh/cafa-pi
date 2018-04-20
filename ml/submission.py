@@ -1,8 +1,10 @@
 import sys
 
+# command line: python submission.py input.tsv modelNo taxonID goID "keywords"
+
 # Filename Format
 def create_outFile_name(model, taxon, go):
-    outFile_name = "BYU-BRG_" + model + "_" + taxon + "_" + go + ".txt"
+    outFile_name = "BYU-BRG-W18" + model + "_" + taxon + "_" + go + ".txt"
     return outFile_name
 
 # File Header
@@ -17,7 +19,7 @@ def create_dictionary(file):
         line = line.strip()
         column = line.split("\t")
         cafa = column[0]
-        prob = column[1]
+        prob = str(format(float(column[1]), '.2f'))
         predictions_dict[cafa] = prob
     return predictions_dict
 
