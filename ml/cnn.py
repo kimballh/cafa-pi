@@ -47,7 +47,7 @@ if __name__ == "__main__":
         tf.nn.l2_loss(v) for v in vars_
             if 'bias' not in v.name
     ]) * 0.001
-    loss = tf.losses.softmax_cross_entropy(targets, outputs) + l2
+    loss = tf.losses.sigmoid_cross_entropy(targets, outputs) + l2
     tf.summary.scalar("mse", loss)
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
