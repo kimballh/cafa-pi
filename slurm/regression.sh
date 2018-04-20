@@ -5,7 +5,7 @@
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=16384M   # memory per CPU core
-#SBATCH -J "Multiclass classifier"   # job name
+#SBATCH -J "Regression"   # job name
 #SBATCH --mail-user=jonathandayton23@gmail.com   # email address
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
