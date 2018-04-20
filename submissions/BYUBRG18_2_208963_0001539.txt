@@ -1,0 +1,5 @@
+AUTHOR	BYUBRG18
+MODEL	2
+KEYWORDS	convolutional neural network, deep learning, machine learning, neural network, supervised learning
+T2089630003546	0.01
+END
