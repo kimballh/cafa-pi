@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from .embeddings import load_data_padded, get_batch, shuffle_unison, H5pyDao, seq_from_matrix
+from .embeddings import seq_from_matrix
 import random
 from .dao import HDF5Dao, HDF5TargetDao
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                         seq = seq_from_matrix(mtx)
                         predictions[seq] = output
                 out_path = "./data/predictions/binary_motility_208963.csv"
-                print(f"Saving predictions in {out_path}")
+                print("Saving predictions in {out_path}".format(out_path=out_path))
                 with open(out_path, "w") as outfile:
                     for seq, preds in predictions.items():
                         outfile.write(seq + "," + ",".join([str(x) for x in preds]) + "\n")
