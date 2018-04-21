@@ -1,6 +1,6 @@
 AUTHOR	BYUBRG18
 MODEL	3
-KEYWORDS	[Dword embeddings, logistic regression, natural language processing
+KEYWORDS	word embeddings, logistic regression, natural language processing
 T2089630002339	0.99
 T2089630000881	0.99
 T2089630000663	0.99
